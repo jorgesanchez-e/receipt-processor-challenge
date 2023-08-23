@@ -10,7 +10,7 @@ COVER_FILE="${REPORTS_DIR}/cover.out"
 echo "Running unit tests."
 
 # Generate tests report
-go test -v ./... -coverprofile ${COVER_FILE}  || status=$?
+go test -timeout 30s -race -v ./... -coverprofile ${COVER_FILE}  || status=$?
 
 # Print code coverage details
 go tool cover -func "${COVER_FILE}"

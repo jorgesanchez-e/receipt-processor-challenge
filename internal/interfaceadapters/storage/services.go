@@ -5,8 +5,6 @@ import (
 
 	"receipt-processor-challenge/internal/domain/receipt"
 	"receipt-processor-challenge/internal/interfaceadapters/storage/memory"
-
-	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
@@ -15,6 +13,6 @@ type Service struct {
 
 func New(ctx context.Context) Service {
 	return Service{
-		Repository: memory.New(ctx, logrus.ErrorLevel),
+		Repository: memory.New(ctx),
 	}
 }

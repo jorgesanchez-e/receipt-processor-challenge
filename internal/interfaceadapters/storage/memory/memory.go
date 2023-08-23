@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 
 	"receipt-processor-challenge/internal/domain/receipt"
 )
@@ -14,6 +14,8 @@ import (
 const (
 	get operation = iota
 	set
+
+	defaultTimeOut = time.Second
 )
 
 var (
@@ -30,6 +32,7 @@ var (
 type operation int
 
 type request struct {
+	ctx context.Context
 	op  operation
 	in  chan payload
 	out chan payload
@@ -37,18 +40,19 @@ type request struct {
 
 type payload struct {
 	id   uuid.UUID
-	data receipt.Points
+	data *receipt.Points
 	err  error
 }
 
 type Engine struct {
-	req chan request
+	req       chan request
+	opTimeOut time.Duration
 }
 
-func New(ctx context.Context, logLevel logrus.Level) *Engine {
+func New(ctx context.Context) *Engine {
 	once.Do(func() {
-		logrus.SetLevel(logLevel)
 		engine.req = make(chan request)
+		engine.opTimeOut = defaultTimeOut
 		go engine.start(ctx)
 	})
 
@@ -74,25 +78,45 @@ func (e *Engine) start(ctx context.Context) {
 }
 
 func (e *Engine) save(req request) {
-	defer func() {
-		logrus.Debug("save called")
-	}()
+	var data payload
 
-	data := <-req.in
-	storage[data.id] = data.data
+	select {
+	case data = <-req.in:
+	case <-req.ctx.Done():
+		return
+	}
 
-	req.out <- payload{err: nil}
+	storage[data.id] = *data.data
+
+	defer close(req.out)
+
+	select {
+	case req.out <- payload{err: nil}:
+	case <-req.ctx.Done():
+	}
 }
 
 func (e *Engine) get(req request) {
+	var data payload
+
+	select {
+	case data = <-req.in:
+	case <-req.ctx.Done():
+		return
+	}
+
+	var pload *payload
+
+	defer close(req.out)
 	defer func() {
-		logrus.Debug("get called")
+		select {
+		case <-req.ctx.Done():
+		case req.out <- *pload:
+		}
 	}()
 
-	data := <-req.in
-
 	if data.id == uuid.Nil {
-		req.out <- payload{
+		pload = &payload{
 			id:  data.id,
 			err: errInvalidID,
 		}
@@ -102,7 +126,7 @@ func (e *Engine) get(req request) {
 
 	val, ok := storage[data.id]
 	if !ok {
-		req.out <- payload{
+		pload = &payload{
 			id:  data.id,
 			err: ErrNotFound,
 		}
@@ -110,29 +134,43 @@ func (e *Engine) get(req request) {
 		return
 	}
 
-	req.out <- payload{
+	pload = &payload{
 		id:   data.id,
-		data: val,
+		data: &val,
 		err:  nil,
 	}
 }
 
 func (e *Engine) Save(ctx context.Context, receipt receipt.Points) (uuid.UUID, error) {
+	if _, deadLineSet := ctx.Deadline(); !deadLineSet {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, e.opTimeOut)
+		defer cancel()
+	}
+
 	id := uuid.New()
 
 	saveRequest := request{
+		ctx: ctx,
 		op:  set,
 		in:  make(chan payload),
 		out: make(chan payload),
 	}
 
+	pload := payload{
+		id:   id,
+		data: &receipt,
+	}
+
 	select {
 	case <-ctx.Done():
-		return uuid.Nil, errTimeOut
+		return uuid.Nil, ctx.Err()
 	case e.req <- saveRequest:
-		saveRequest.in <- payload{
-			id:   id,
-			data: receipt,
+		select {
+		case saveRequest.in <- pload:
+			close(saveRequest.in)
+		case <-ctx.Done():
+			return uuid.Nil, ctx.Err()
 		}
 	}
 
@@ -142,7 +180,14 @@ func (e *Engine) Save(ctx context.Context, receipt receipt.Points) (uuid.UUID, e
 }
 
 func (e *Engine) Get(ctx context.Context, id uuid.UUID) (*receipt.Points, error) {
+	if _, deadLineSet := ctx.Deadline(); !deadLineSet {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, e.opTimeOut)
+		defer cancel()
+	}
+
 	getRequest := request{
+		ctx: ctx,
 		op:  get,
 		in:  make(chan payload),
 		out: make(chan payload),
@@ -152,10 +197,15 @@ func (e *Engine) Get(ctx context.Context, id uuid.UUID) (*receipt.Points, error)
 	case <-ctx.Done():
 		return nil, errTimeOut
 	case e.req <- getRequest:
-		getRequest.in <- payload{id: id}
+		select {
+		case getRequest.in <- payload{id: id}:
+			close(getRequest.in)
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 
 	data := <-getRequest.out
 
-	return &data.data, data.err
+	return data.data, data.err
 }

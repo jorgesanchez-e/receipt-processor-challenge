@@ -2,109 +2,101 @@ package memory_test
 
 import (
 	"context"
+	"errors"
 	"os"
-	"sync"
 	"testing"
+	"time"
 
 	"receipt-processor-challenge/internal/domain/receipt"
 	. "receipt-processor-challenge/internal/interfaceadapters/storage/memory"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	mStorage *Engine
-
-	wg sync.WaitGroup
-)
-
-type result struct {
-	id     uuid.UUID
-	points receipt.Points
-}
+var mStorage *Engine
 
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mStorage = New(ctx, logrus.DebugLevel)
+	mStorage = New(ctx)
 	code := m.Run()
 
 	cancel()
 	os.Exit(code)
 }
 
-func Test_Operations(t *testing.T) {
+func Test_Save(t *testing.T) {
+	cases := []struct {
+		name           string
+		contextBuilder func() (context.Context, context.CancelFunc)
+		input          []receipt.Points
+		expectedResult []error
+	}{
+		{
+			name: "normal-case",
+			contextBuilder: func() (context.Context, context.CancelFunc) {
+				return context.WithCancel(context.Background())
+			},
+			input: []receipt.Points{
+				{Points: 10},
+				{Points: 20},
+				{Points: 30},
+				{Points: 40},
+				{Points: 50},
+			},
+			expectedResult: []error{
+				nil,
+				nil,
+				nil,
+				nil,
+				nil,
+			},
+		}, {
+			name: "time-out-case",
+			contextBuilder: func() (context.Context, context.CancelFunc) {
+				ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-1*time.Second))
+
+				return ctx, cancel
+			},
+			input: []receipt.Points{
+				{Points: 10},
+			},
+			expectedResult: []error{context.DeadlineExceeded},
+		},
+	}
+
+	for _, c := range cases {
+		ctx, cancel := c.contextBuilder()
+		input := c.input
+		expectedResult := c.expectedResult
+
+		t.Run(c.name, func(t *testing.T) {
+			defer cancel()
+
+			for i := 0; i < len(input); i++ {
+				uuid, err := mStorage.Save(ctx, input[i])
+
+				assert.NotNil(t, uuid)
+				assert.Equal(t, expectedResult[i], err)
+			}
+		})
+	}
+}
+
+func Test_Get(t *testing.T) {
 	ctx := context.Background()
 
-	operations := 10
+	point, err := mStorage.Get(ctx, uuid.New())
+	assert.Equal(t, errors.New("points not found"), err)
+	assert.Nil(t, point)
 
-	results := newExectedResults(t, operations)
-	saveFunctions := make([]func(*result), operations)
+	newPoint := receipt.Points{Points: 199}
+	newID, err := mStorage.Save(ctx, newPoint)
+	assert.NoError(t, err)
+	assert.NotEqual(t, uuid.Nil, newID)
 
-	trigger := make(chan struct{})
-	for i := 0; i < operations; i++ {
-		saveFunctions[i] = newSaveOperation(t, ctx, trigger, &results[i])
-		go saveFunctions[i](&results[i])
-	}
-
-	close(trigger)
-	wg.Wait()
-
-	trigger = make(chan struct{})
-	getFunctions := make([]func(result), operations)
-
-	for i := 0; i < operations; i++ {
-		getFunctions[i] = newGetOperations(t, ctx, trigger, results[i])
-		go getFunctions[i](results[i])
-	}
-
-	close(trigger)
-	wg.Wait()
-
-	_, err := mStorage.Get(ctx, uuid.New())
-	assert.Equal(t, err, ErrNotFound)
-}
-
-func newExectedResults(t *testing.T, n int) []result {
-	t.Helper()
-
-	results := make([]result, n)
-
-	for i := 0; i < n; i++ {
-		results[i].points = receipt.Points{Points: i}
-	}
-
-	return results
-}
-
-func newSaveOperation(t *testing.T, ctx context.Context, trigger chan struct{}, data *result) func(*result) {
-	t.Helper()
-
-	return func(r *result) {
-		wg.Add(1)
-		<-trigger
-
-		uuid, err := mStorage.Save(ctx, r.points)
-		assert.NoError(t, err)
-		assert.NotNil(t, uuid)
-
-		r.id = uuid
-		wg.Done()
-	}
-}
-
-func newGetOperations(t *testing.T, ctx context.Context, trigger chan struct{}, data result) func(result) {
-	t.Helper()
-	return func(r result) {
-		wg.Add(1)
-		<-trigger
-
-		points, err := mStorage.Get(ctx, r.id)
-		assert.NoError(t, err)
-		assert.Equal(t, *points, r.points)
-
-		wg.Done()
-	}
+	lastPoint, err := mStorage.Get(ctx, newID)
+	assert.NoError(t, err)
+	assert.Equal(t, newPoint.Points, lastPoint.Points)
 }
