@@ -27,6 +27,6 @@ type Service struct {
 func NewServices(repo receipt.Repository, calc commands.Calculator) Service {
 	return Service{
 		commands.NewAddReceiptPointsHandler(repo, calc),
-		queries.NewGetCragRequestHandler(repo),
+		queries.NewReceiptPointsRequestHandler(repo),
 	}
 }

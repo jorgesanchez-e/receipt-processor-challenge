@@ -12,12 +12,12 @@ type GetReceiptPointsHandler struct {
 	repo receipt.Repository
 }
 
-// NewGetCragRequestHandler Handler Constructor
-func NewGetCragRequestHandler(repo receipt.Repository) GetReceiptPointsHandler {
+// NewReceiptPointsRequestHandler Handler Constructor
+func NewReceiptPointsRequestHandler(repo receipt.Repository) GetReceiptPointsHandler {
 	return GetReceiptPointsHandler{repo: repo}
 }
 
-// Handle Handlers the GetCragRequest query
+// Handle Handlers the GetReceiptPoints request.
 func (h GetReceiptPointsHandler) Handle(ctx context.Context, id uuid.UUID) (*receipt.Points, error) {
 	return h.repo.Get(ctx, id)
 }
