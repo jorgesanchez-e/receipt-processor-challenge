@@ -389,9 +389,10 @@ func Test_Points(t *testing.T) {
 		r := c.receipt
 		expectedPoints := c.expectedResult
 		expectedError := c.expectedError
+		cal := New(ctx)
 
 		t.Run(c.name, func(t *testing.T) {
-			points, err := Points(ctx, r)
+			points, err := cal.Points(ctx, r)
 
 			assert.Equal(t, expectedPoints, points)
 			assert.Equal(t, expectedError, err)

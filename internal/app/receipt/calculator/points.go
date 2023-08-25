@@ -23,7 +23,8 @@ var (
 	ErrTime = errors.New("invalid time format")
 )
 
-/**
+/*
+*
 RULES
 One point for every alphanumeric character in the retailer name.
 50 points if the total is a round dollar amount with no cents.
@@ -32,9 +33,15 @@ One point for every alphanumeric character in the retailer name.
 If the trimmed length of the item description is a multiple of 3, multiply the price by 0.2 and round up to the nearest integer. The result is the number of points earned.
 6 points if the day in the purchase date is odd.
 10 points if the time of purchase is after 2:00pm and before 4:00pm.
-***/
+**
+*/
+type Calculator struct{}
 
-func Points(ctx context.Context, r receipt.Receipt) (*receipt.Points, error) {
+func New(ctx context.Context) Calculator {
+	return Calculator{}
+}
+
+func (c Calculator) Points(ctx context.Context, r receipt.Receipt) (*receipt.Points, error) {
 	purchaseDate, err := time.Parse(datePurchaseFormat, r.PurchaseDate)
 	if err != nil {
 		return nil, ErrDate
