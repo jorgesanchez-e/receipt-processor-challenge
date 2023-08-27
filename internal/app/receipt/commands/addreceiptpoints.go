@@ -12,26 +12,26 @@ type Calculator interface {
 	Points(ctx context.Context, r receipt.Receipt) (*receipt.Points, error)
 }
 
-type SaveReceiptPointsHandler struct {
+type PointsSaver struct {
 	repo receipt.Repository
 	calc Calculator
 }
 
 // NewAddReceiptPointsHandler Initializes an addReceiptPointsHandler
-func NewSaveReceiptPointsHandler(repo receipt.Repository, calc Calculator) SaveReceiptPointsHandler {
-	return SaveReceiptPointsHandler{
+func NewSaverReceiptPoint(repo receipt.Repository, calc Calculator) PointsSaver {
+	return PointsSaver{
 		repo: repo,
 		calc: calc,
 	}
 }
 
-func (h SaveReceiptPointsHandler) Handle(ctx context.Context, r receipt.Receipt) (uuid.UUID, error) {
-	points, err := h.calc.Points(ctx, r)
+func (ps PointsSaver) SavePoints(ctx context.Context, r receipt.Receipt) (uuid.UUID, error) {
+	points, err := ps.calc.Points(ctx, r)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
-	id, err := h.repo.Save(ctx, *points)
+	id, err := ps.repo.Save(ctx, *points)
 	if err != nil {
 		return uuid.Nil, err
 	}

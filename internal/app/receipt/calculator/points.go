@@ -2,7 +2,6 @@ package calculator
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -11,16 +10,6 @@ import (
 	"unicode"
 
 	"receipt-processor-challenge/internal/domain/receipt"
-)
-
-const (
-	datePurchaseFormat string = "2006-01-02"
-	timePurchaseFormat string = "15:04"
-)
-
-var (
-	ErrDate = errors.New("invalid date format")
-	ErrTime = errors.New("invalid time format")
 )
 
 /*
@@ -42,23 +31,13 @@ func New(ctx context.Context) Calculator {
 }
 
 func (c Calculator) Points(ctx context.Context, r receipt.Receipt) (*receipt.Points, error) {
-	purchaseDate, err := time.Parse(datePurchaseFormat, r.PurchaseDate)
-	if err != nil {
-		return nil, ErrDate
-	}
-
-	purchaseTime, err := time.Parse(timePurchaseFormat, r.PurchaseTime)
-	if err != nil {
-		return nil, ErrTime
-	}
-
 	points := retailerNamePoints(r.Retailer)
 	points += roundDollarPoints(r.Total)
 	points += multipleOf25CentsPoints(r.Total)
 	points += itemsPoints(r.Items)
 	points += trimmedDescriptionPoints(r.Items)
-	points += oddPurchaseDayPoints(purchaseDate)
-	points += timePurchasePoints(purchaseTime)
+	points += oddPurchaseDayPoints(r.PurchaseDate)
+	points += timePurchasePoints(r.PurchaseTime)
 
 	return &receipt.Points{Points: points}, nil
 }
@@ -74,17 +53,15 @@ func retailerNamePoints(name string) int {
 	return points
 }
 
-func roundDollarPoints(total float32) int {
-	test := float64(total)
-
-	if test == math.Trunc(test) {
+func roundDollarPoints(total float64) int {
+	if total == math.Trunc(total) {
 		return 50
 	}
 
 	return 0
 }
 
-func multipleOf25CentsPoints(total float32) int {
+func multipleOf25CentsPoints(total float64) int {
 	const frac float64 = 0.25
 	if math.Mod(float64(total), frac) == 0 {
 		return 25

@@ -2,7 +2,6 @@ package calculator
 
 import (
 	"context"
-	"errors"
 	"receipt-processor-challenge/internal/domain/receipt"
 	"testing"
 	"time"
@@ -43,7 +42,7 @@ func Test_RetailerNamePoints(t *testing.T) {
 func Test_roundDollarPoints(t *testing.T) {
 	cases := []struct {
 		name           string
-		total          float32
+		total          float64
 		expectedResult int
 	}{
 		{
@@ -73,7 +72,7 @@ func Test_roundDollarPoints(t *testing.T) {
 func Test_multipleOf25CentsPoints(t *testing.T) {
 	cases := []struct {
 		name           string
-		total          float32
+		total          float64
 		expectedResult int
 	}{
 		{
@@ -209,7 +208,7 @@ func Test_oddPurchaseDayPoints(t *testing.T) {
 
 	for _, c := range cases {
 		expectedPoints := c.expectedResult
-		date, err := time.Parse(datePurchaseFormat, c.date)
+		date, err := time.Parse(receipt.DatePurchaseFormat, c.date)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -242,7 +241,7 @@ func Test_timePurchasePoints(t *testing.T) {
 
 	for _, c := range cases {
 		expectedPoints := c.expectedResult
-		ctime, err := time.Parse(timePurchaseFormat, c.tdate)
+		ctime, err := time.Parse(receipt.TimePurchaseFormat, c.tdate)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -266,8 +265,8 @@ func Test_Points(t *testing.T) {
 			name: "Target-case",
 			receipt: receipt.Receipt{
 				Retailer:     "Target",
-				PurchaseDate: "2022-01-01",
-				PurchaseTime: "13:01",
+				PurchaseDate: purchaseDate(t, "2022-01-01"),
+				PurchaseTime: purchaseTime(t, "13:01"),
 				Items: []receipt.Item{
 					{
 						ShortDescription: "Mountain Dew 12PK",
@@ -299,8 +298,8 @@ func Test_Points(t *testing.T) {
 			name: "M&M Corner Market-case",
 			receipt: receipt.Receipt{
 				Retailer:     "M&M Corner Market",
-				PurchaseDate: "2022-03-20",
-				PurchaseTime: "14:33",
+				PurchaseDate: purchaseDate(t, "2022-03-20"),
+				PurchaseTime: purchaseTime(t, "14:33"),
 				Items: []receipt.Item{
 					{
 						ShortDescription: "Gatorade",
@@ -324,64 +323,6 @@ func Test_Points(t *testing.T) {
 			expectedResult: &receipt.Points{Points: 109},
 			expectedError:  nil,
 		},
-		{
-			name: "error-date-case",
-			receipt: receipt.Receipt{
-				Retailer:     "M&M Corner Market",
-				PurchaseDate: "2022-03-32",
-				PurchaseTime: "14:33",
-				Items: []receipt.Item{
-					{
-						ShortDescription: "Gatorade",
-						Price:            2.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            12.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            2.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            12.25,
-					},
-				},
-				Total: 9.00,
-			},
-			expectedResult: nil,
-			expectedError:  errors.New("invalid date format"),
-		},
-		{
-			name: "error-time-case",
-			receipt: receipt.Receipt{
-				Retailer:     "M&M Corner Market",
-				PurchaseDate: "2022-03-20",
-				PurchaseTime: "25:33",
-				Items: []receipt.Item{
-					{
-						ShortDescription: "Gatorade",
-						Price:            2.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            12.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            2.25,
-					},
-					{
-						ShortDescription: "Gatorade",
-						Price:            12.25,
-					},
-				},
-				Total: 9.00,
-			},
-			expectedResult: nil,
-			expectedError:  errors.New("invalid time format"),
-		},
 	}
 
 	for _, c := range cases {
@@ -398,4 +339,22 @@ func Test_Points(t *testing.T) {
 			assert.Equal(t, expectedError, err)
 		})
 	}
+}
+
+func purchaseDate(t *testing.T, date string) time.Time {
+	tdate, err := time.Parse(receipt.DatePurchaseFormat, date)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return tdate
+}
+
+func purchaseTime(t *testing.T, date string) time.Time {
+	tdate, err := time.Parse(receipt.TimePurchaseFormat, date)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return tdate
 }

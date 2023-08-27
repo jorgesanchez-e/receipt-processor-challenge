@@ -8,16 +8,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type GetReceiptPointsHandler struct {
+type PointsGetter struct {
 	repo receipt.Repository
 }
 
 // NewReceiptPointsRequestHandler Handler Constructor
-func NewReceiptPointsRequestHandler(repo receipt.Repository) GetReceiptPointsHandler {
-	return GetReceiptPointsHandler{repo: repo}
+func NewGetterReceiptPoints(repo receipt.Repository) PointsGetter {
+	return PointsGetter{repo: repo}
 }
 
 // Handle Handlers the GetReceiptPoints request.
-func (h GetReceiptPointsHandler) Handle(ctx context.Context, id uuid.UUID) (*receipt.Points, error) {
-	return h.repo.Get(ctx, id)
+func (pg PointsGetter) GetPoints(ctx context.Context, id uuid.UUID) (*receipt.Points, error) {
+	return pg.repo.Get(ctx, id)
 }

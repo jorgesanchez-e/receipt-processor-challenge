@@ -8,14 +8,14 @@ import (
 
 // Services contains all exposed services of the application layer
 type Service struct {
-	commands.SaveReceiptPointsHandler
-	queries.GetReceiptPointsHandler
+	commands.PointsSaver
+	queries.PointsGetter
 }
 
 // NewServices Bootstraps Application Layer dependencies
 func NewServices(repo receipt.Repository, calc commands.Calculator) Service {
 	return Service{
-		commands.NewSaveReceiptPointsHandler(repo, calc),
-		queries.NewReceiptPointsRequestHandler(repo),
+		commands.NewSaverReceiptPoint(repo, calc),
+		queries.NewGetterReceiptPoints(repo),
 	}
 }
