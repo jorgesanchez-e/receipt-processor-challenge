@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"log"
+	"os"
 
 	rcp "receipt-processor-challenge/internal/domain/receipt"
 
@@ -13,6 +14,8 @@ import (
 const (
 	processPath string = "/process"
 	pointsPath  string = "/:id/points"
+
+	envPort string = "HTTP_PORT"
 )
 
 type ReceiptAPI interface {
@@ -40,6 +43,10 @@ func (s *Server) routes() {
 
 func (s *Server) Start() {
 	s.routes()
+	port := os.Getenv(envPort)
+	if port == "" {
+		port = ":8080"
+	}
 
-	log.Fatal(s.router.Start(":8080"))
+	log.Fatal(s.router.Start(port))
 }

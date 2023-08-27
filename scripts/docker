@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+if [ -z "${APPNAME}" ]; then
+    echo "APPNAME must be set"
+    exit 1
+fi
+
+if [ -z "${DOCKER_TAG}" ]; then
+    echo "DOCKER_TAG must be set"
+    exit 1
+fi
+
+docker build --tag ${APPNAME}:${DOCKER_TAG} .

@@ -4,6 +4,7 @@ APPNAME ?= receipt-processor-challenge
 export REPORTS_DIR=./reports
 # used by lint target
 export GOLANGCILINT_VERSION=v1.34.1
+export DOCKER_TAG=1.0
 
 build: clean
 	mkdir -p build
@@ -24,4 +25,7 @@ lint:
 clean:
 	APPNAME=$(APPNAME) ./scripts/clean
 
-.PHONY: build run test test-report lint clean
+docker:
+	APPNAME=$(APPNAME) DOCKER_TAG=$(DOCKER_TAG) ./scripts/docker
+
+.PHONY: build run test test-report lint clean docker
