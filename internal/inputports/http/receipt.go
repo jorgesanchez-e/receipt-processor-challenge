@@ -9,6 +9,7 @@ import (
 	"time"
 
 	rcp "receipt-processor-challenge/internal/domain/receipt"
+	"receipt-processor-challenge/internal/interfaceadapters/storage/memory"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -102,7 +103,7 @@ func (s *Server) getReceiptPoints(e echo.Context) (err error) {
 
 	p, err := s.receiptApp.GetPoints(ctx, paramUUID)
 	if err != nil {
-		err = fmt.Errorf("system error:%w", err)
+		err = fmt.Errorf("storage error:%w", err)
 		return
 	}
 
@@ -216,17 +217,23 @@ func apiReceiptResponse(e echo.Context, r interface{}) error {
 }
 
 func apiReceiptResponseError(e echo.Context, err error) error {
-	if errors.Is(err, ErrInvalidRequest) {
-		msg, _ := strings.CutSuffix(err.Error(), fmt.Sprintf(":%s", ErrInvalidRequest.Error()))
+	code := http.StatusInternalServerError
+	jsonErr := responseErrorMsg{Msg: "unexpected error"}
 
-		return e.JSON(http.StatusBadRequest, responseErrorMsg{Msg: msg})
+	if errors.Is(err, ErrInvalidRequest) {
+		jsonErr.Msg, _ = strings.CutSuffix(err.Error(), fmt.Sprintf(":%s", ErrInvalidRequest.Error()))
+		code = http.StatusBadRequest
 	}
 
 	if errors.Is(err, ErrDecode) {
-		msg, _ := strings.CutSuffix(err.Error(), fmt.Sprintf(":%s", ErrDecode.Error()))
-
-		return e.JSON(http.StatusBadRequest, responseErrorMsg{Msg: msg})
+		jsonErr.Msg, _ = strings.CutSuffix(err.Error(), fmt.Sprintf(":%s", ErrDecode.Error()))
+		code = http.StatusBadRequest
 	}
 
-	return e.JSON(http.StatusInternalServerError, nil)
+	if errors.Is(err, memory.ErrNotFound) {
+		jsonErr.Msg, _ = strings.CutPrefix(err.Error(), "storage error:")
+		code = http.StatusNotFound
+	}
+
+	return e.JSON(code, jsonErr)
 }

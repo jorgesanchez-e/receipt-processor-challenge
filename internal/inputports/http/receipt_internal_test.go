@@ -474,7 +474,6 @@ func Test_GetReceiptPoints(t *testing.T) {
 			expectedHTTPCode: http.StatusBadRequest,
 			expectedError:    nil,
 		},
-
 		{
 			name: "store-error-case",
 			contextBuilder: func() (echo.Context, *httptest.ResponseRecorder) {
@@ -498,7 +497,7 @@ func Test_GetReceiptPoints(t *testing.T) {
 				return &apiMock
 			},
 
-			expectedResponse: []byte(`null`),
+			expectedResponse: []byte(`{"error":"unexpected error"}`),
 			expectedHTTPCode: http.StatusInternalServerError,
 			expectedError:    nil,
 		},
