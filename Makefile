@@ -3,7 +3,7 @@ APPNAME ?= receipt-processor-challenge
 # used by `test` target
 export REPORTS_DIR=./reports
 # used by lint target
-export GOLANGCILINT_VERSION=v1.34.1
+export GOLANGCILINT_VERSION=v1.54.2
 export DOCKER_TAG=1.0
 
 build: clean
