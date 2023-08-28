@@ -1,5 +1,14 @@
 # receipt processor challenge
 
+## structure
+This repository follows the clean arquitecture structure, where the software components are 
+located into the following directories:
+
+- **internal/domain/receipt/**: Entities and enterprice business rules.
+- **internal/interfaceadapters/storage/**: In memory storage.
+- **internal/inputports/http/**: exposed endpoints.
+- **internal/app/**: application business.
+
 ## Makefile
 
 This repository has a Makefile with the following targets to help us with some repetitive tasks:
@@ -43,5 +52,5 @@ make docker;
 docker run -p 8080:8080 receipt-processor-challenge:1.0;
 ```
 
-Note: the project opens the 8080 port in localhost.
+**Note**: the project opens the 8080 port in localhost.
 
