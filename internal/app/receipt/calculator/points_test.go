@@ -1,7 +1,6 @@
 package calculator
 
 import (
-	"context"
 	"receipt-processor-challenge/internal/domain/receipt"
 	"testing"
 	"time"
@@ -326,14 +325,13 @@ func Test_Points(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		ctx := context.Background()
 		r := c.receipt
 		expectedPoints := c.expectedResult
 		expectedError := c.expectedError
-		cal := New(ctx)
+		cal := New()
 
 		t.Run(c.name, func(t *testing.T) {
-			points, err := cal.Points(ctx, r)
+			points, err := cal.Points(r)
 
 			assert.Equal(t, expectedPoints, points)
 			assert.Equal(t, expectedError, err)

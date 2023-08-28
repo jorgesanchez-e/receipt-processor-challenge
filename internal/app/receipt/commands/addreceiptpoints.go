@@ -2,14 +2,13 @@ package commands
 
 import (
 	"context"
-
 	"receipt-processor-challenge/internal/domain/receipt"
 
 	"github.com/google/uuid"
 )
 
 type Calculator interface {
-	Points(ctx context.Context, r receipt.Receipt) (*receipt.Points, error)
+	Points(r receipt.Receipt) (*receipt.Points, error)
 }
 
 type PointsSaver struct {
@@ -17,7 +16,7 @@ type PointsSaver struct {
 	calc Calculator
 }
 
-// NewAddReceiptPointsHandler Initializes an addReceiptPointsHandler
+// NewAddReceiptPointsHandler Initializes an addReceiptPointsHandler.
 func NewSaverReceiptPoint(repo receipt.Repository, calc Calculator) PointsSaver {
 	return PointsSaver{
 		repo: repo,
@@ -26,7 +25,7 @@ func NewSaverReceiptPoint(repo receipt.Repository, calc Calculator) PointsSaver 
 }
 
 func (ps PointsSaver) SavePoints(ctx context.Context, r receipt.Receipt) (uuid.UUID, error) {
-	points, err := ps.calc.Points(ctx, r)
+	points, err := ps.calc.Points(r)
 	if err != nil {
 		return uuid.Nil, err
 	}

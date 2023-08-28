@@ -28,7 +28,7 @@ type Server struct {
 	router     *echo.Echo
 }
 
-func NewServer(ctx context.Context, app ReceiptAPI) *Server {
+func NewServer(_ context.Context, app ReceiptAPI) *Server {
 	return &Server{
 		receiptApp: app,
 		router:     echo.New(),
@@ -43,6 +43,7 @@ func (s *Server) routes() {
 
 func (s *Server) Start() {
 	s.routes()
+
 	port := os.Getenv(envPort)
 	if port == "" {
 		port = ":8080"

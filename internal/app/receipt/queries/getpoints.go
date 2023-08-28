@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-
 	"receipt-processor-challenge/internal/domain/receipt"
 
 	"github.com/google/uuid"
@@ -12,7 +11,7 @@ type PointsGetter struct {
 	repo receipt.Repository
 }
 
-// NewReceiptPointsRequestHandler Handler Constructor
+// NewReceiptPointsRequestHandler Handler Constructor.
 func NewGetterReceiptPoints(repo receipt.Repository) PointsGetter {
 	return PointsGetter{repo: repo}
 }

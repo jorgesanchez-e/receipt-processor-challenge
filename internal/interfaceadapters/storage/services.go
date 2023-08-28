@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-
 	"receipt-processor-challenge/internal/domain/receipt"
 	"receipt-processor-challenge/internal/interfaceadapters/storage/memory"
 )

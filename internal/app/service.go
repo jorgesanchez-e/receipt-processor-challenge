@@ -6,13 +6,13 @@ import (
 	"receipt-processor-challenge/internal/domain/receipt"
 )
 
-// Services contains all exposed services of the application layer
+// Services contains all exposed services of the application layer.
 type Service struct {
 	commands.PointsSaver
 	queries.PointsGetter
 }
 
-// NewServices Bootstraps Application Layer dependencies
+// NewServices Bootstraps Application Layer dependencies.
 func NewServices(repo receipt.Repository, calc commands.Calculator) Service {
 	return Service{
 		commands.NewSaverReceiptPoint(repo, calc),

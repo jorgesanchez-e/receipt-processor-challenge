@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+
 	"receipt-processor-challenge/internal/app"
 	"receipt-processor-challenge/internal/app/receipt/calculator"
 	"receipt-processor-challenge/internal/inputports/http"
@@ -11,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 	repo := memory.New(ctx)
-	calc := calculator.New(ctx)
+	calc := calculator.New()
 	app := app.NewServices(repo, calc)
 
 	server := http.NewServer(ctx, app)
